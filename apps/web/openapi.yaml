@@ -1,0 +1,77 @@
+openapi: 3.1.0
+info:
+  title: Bookstore API
+  version: 0.1.0
+paths:
+  /books:
+    get:
+      operationId: listBooks
+      tags: [books]
+      responses:
+        '200':
+          description: All books
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Book' } }
+    post:
+      operationId: createBook
+      tags: [books]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Book' }
+  /books/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getBook
+      tags: [books]
+      responses:
+        '200':
+          description: The book
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Book' }
+        '404': { description: Not found }
+    put:
+      operationId: updateBook
+      tags: [books]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookInput' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Book' }
+    delete:
+      operationId: deleteBook
+      tags: [books]
+      responses:
+        '204': { description: Deleted }
+components:
+  schemas:
+    BookInput:
+      type: object
+      required: [title, author, price]
+      properties:
+        title: { type: string }
+        author: { type: string }
+        price: { type: number, minimum: 0 }
+    Book:
+      allOf:
+        - { $ref: '#/components/schemas/BookInput' }
+        - type: object
+          required: [id]
+          properties:
+            id: { type: string }
