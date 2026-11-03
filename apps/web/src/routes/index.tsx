@@ -5,6 +5,18 @@ import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { errorMessage, request } from '@/api/axios'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+  useComboboxAnchor,
+} from '@/components/ui/combobox'
 
 // Open Library subject names; each checked to return 2026 English books.
 const SUBJECTS = ['romance', 'fantasy', 'science fiction', 'mystery', 'thriller', 'young adult', 'biography', 'history', 'self-help', 'business', 'poetry', 'comics']
@@ -57,10 +69,7 @@ function Latest() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
   const selected = search.subject ?? []
-  const toggle = (x: string) => {
-    const subject = selected.includes(x) ? selected.filter((y) => y !== x) : [...selected, x]
-    navigate({ search: { ...search, subject: subject.length ? subject : undefined } })
-  }
+  const anchor = useComboboxAnchor()
   const { data, isPending, error, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } =
     useInfiniteQuery({
       queryKey: ['latest', year, search],
@@ -94,26 +103,46 @@ function Latest() {
   return (
     <main className="mx-auto max-w-5xl space-y-4 p-6">
       <h1 className="font-heading text-2xl font-semibold">Latest books ({year})</h1>
-      <div role="group" aria-label="Categories" className="flex flex-wrap gap-2">
-        <Button
-          size="sm"
-          variant={selected.length ? 'outline' : 'default'}
-          aria-pressed={!selected.length}
-          onClick={() => navigate({ search: {} })}
+      <div className="flex items-start gap-2">
+        <Combobox
+          multiple
+          autoHighlight
+          items={SUBJECTS}
+          itemToStringLabel={label}
+          value={selected}
+          onValueChange={(v: string[]) => navigate({ search: { ...search, subject: v.length ? v : undefined } })}
         >
-          All
-        </Button>
-        {SUBJECTS.map((x) => (
-          <Button
-            key={x}
-            size="sm"
-            variant={selected.includes(x) ? 'default' : 'outline'}
-            aria-pressed={selected.includes(x)}
-            onClick={() => toggle(x)}
-          >
-            {label(x)}
+          <ComboboxChips ref={anchor} className="flex-1">
+            <ComboboxValue>
+              {(values: string[]) => (
+                <>
+                  {values.map((v) => (
+                    <ComboboxChip key={v}>{label(v)}</ComboboxChip>
+                  ))}
+                  <ComboboxChipsInput
+                    aria-label="Filter by category"
+                    placeholder={values.length ? '' : 'All categories'}
+                  />
+                </>
+              )}
+            </ComboboxValue>
+          </ComboboxChips>
+          <ComboboxContent anchor={anchor}>
+            <ComboboxEmpty>No categories found.</ComboboxEmpty>
+            <ComboboxList>
+              {(x: string) => (
+                <ComboboxItem key={x} value={x}>
+                  {label(x)}
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+        {selected.length > 0 && (
+          <Button variant="ghost" size="sm" onClick={() => navigate({ search: {} })}>
+            Clear
           </Button>
-        ))}
+        )}
       </div>
       {selected.length > 1 && (
         <div role="group" aria-label="Match" className="flex gap-2">
