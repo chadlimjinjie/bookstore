@@ -32,7 +32,15 @@ export const Route = createFileRoute('/')({
   },
 })
 
-type Doc = { key: string; title: string; author_name?: string[]; cover_i?: number; subject?: string[] }
+type Doc = {
+  key: string
+  title: string
+  author_name?: string[]
+  cover_i?: number
+  subject?: string[]
+  first_publish_year?: number
+  publish_date?: string[]
+}
 
 const LIMIT = 24
 
@@ -52,7 +60,7 @@ const fetchLatest = (year: number, search: Search, page: number, signal: AbortSi
       sort: 'new',
       limit: LIMIT,
       page,
-      fields: 'key,title,author_name,cover_i,subject',
+      fields: 'key,title,author_name,cover_i,subject,first_publish_year,publish_date',
     },
     signal,
   })
@@ -205,9 +213,19 @@ function Latest() {
 
 const label = (x: string) => x[0].toUpperCase() + x.slice(1)
 
+// publish_date lists every edition's date as free text ("2026", "Nov 2026", "2026-11-03").
+// Pick the longest one from the first-publish year, as the most precise; fall back to the year.
+// ponytail: shown as Open Library wrote it; formats vary. Normalize if consistency matters.
+const publishedOn = (b: Doc) => {
+  const y = b.first_publish_year
+  if (!y) return undefined
+  return b.publish_date?.filter((d) => d.includes(String(y))).sort((a, c) => c.length - a.length)[0] ?? String(y)
+}
+
 function BookCard({ book: b }: { book: Doc }) {
   // Substring match mirrors Open Library's: "fantasy" matches "Fiction, fantasy, general".
   const tags = SUBJECTS.filter((s) => b.subject?.some((x) => x.toLowerCase().includes(s)))
+  const date = publishedOn(b)
   return (
     <Card>
       {b.cover_i && (
@@ -225,6 +243,7 @@ function BookCard({ book: b }: { book: Doc }) {
           </a>
         </CardTitle>
         <CardDescription>{b.author_name?.join(', ') ?? 'Unknown author'}</CardDescription>
+        {date && <p className="text-xs text-muted-foreground">Published {date}</p>}
         {tags.length > 0 && (
           <ul aria-label="Categories" className="flex flex-wrap gap-1 pt-1">
             {tags.map((t) => (
